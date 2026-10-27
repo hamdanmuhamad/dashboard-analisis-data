@@ -9,7 +9,7 @@ st.title("📊 Dashboard Analisis Data & Visualisasi")
 st.write("Unggah file CSV atau Excel Anda untuk melihat ringkasan data dan grafik interaktif secara instan!")
 
 # 2. Fitur Unggah File (Uploader)
-uploaded_file = st.file_uploader("data_sampel.csv", type=["csv", "xlsx"])
+uploaded_file = st.file_uploader("Pilih file data (Format: .csv, .xlsx)", type=["csv", "xlsx"])
 
 if uploaded_file is not None:
     # Membaca file berdasarkan formatnya
@@ -21,12 +21,38 @@ if uploaded_file is not None:
         
         st.success("File berhasil diunggah!")
         
-        # 3. Menampilkan Ringkasan Data (Metrik)
+        # =========================================================
+        # 🔥 FITUR BARU: SIDEBAR & FILTER DINAMIS
+        # =========================================================
+        st.sidebar.header("🔍 Filter Data")
+        
+        # Filter 1: Wilayah (Jika kolom 'Wilayah' ada di dalam data)
+        if 'Wilayah' in df.columns:
+            opsi_wilayah = ["Semua Wilayah"] + df['Wilayah'].unique().tolist()
+            wilayah_terpilih = st.sidebar.selectbox("Pilih Wilayah:", opsi_wilayah)
+            
+            # Terapkan filter wilayah ke dataframe
+            if wilayah_terpilih != "Semua Wilayah":
+                df = df[df['Wilayah'] == wilayah_terpilih]
+                
+        # Filter 2: Kategori (Jika kolom 'Kategori' ada di dalam data)
+        if 'Kategori' in df.columns:
+            opsi_kategori = ["Semua Kategori"] + df['Kategori'].unique().tolist()
+            kategori_terpilih = st.sidebar.selectbox("Pilih Kategori Produk:", opsi_kategori)
+            
+            # Terapkan filter kategori ke dataframe
+            if kategori_terpilih != "Semua Kategori":
+                df = df[df['Kategori'] == kategori_terpilih]
+        # =========================================================
+        
+        # 3. Menampilkan Ringkasan Data (Metrik) yang sudah terfilter
         st.subheader("🧐 Ringkasan Data")
+        jumlah_duplikat = int(df.duplicated().sum()) if hasattr(df.duplicated(), 'sum') else 0
+        
         col1, col2, col3 = st.columns(3)
-        col1.metric("Total Baris Data", df.shape[0])
-        col2.metric("Total Kolom", df.shape[1])
-        col3.metric("Kolom Duplikat", int(df.duplicated().sum()))
+        col1.metric("Total Baris Data", f"{df.shape[0]}")
+        col2.metric("Total Kolom", f"{df.shape[1]}")
+        col3.metric("Kolom Duplikat", f"{jumlah_duplikat}")
         
         # Menampilkan 5 data pertama
         st.write("**Pratinjau Data (5 Baris Pertama):**")
@@ -62,11 +88,11 @@ if uploaded_file is not None:
                 st.write("**Opsi Grafik 2 (Distribusi / Komposisi)**")
                 if len(kolom_kategori) > 0:
                     kolom_pie = st.selectbox("Pilih Kolom Kategori (untuk Diagram Lingkaran):", kolom_kategori)
-                    # Menghitung jumlah data per kategori
-                    df_pie = df[kolom_pie].value_counts().reset_index()
-                    df_pie.columns = [kolom_pie, 'Jumlah']
                     
-                    fig2 = px.pie(df_pie, values='Jumlah', names=kolom_pie, title=f"Komposisi data pada {kolom_pie}")
+                    df_pie = df[kolom_pie].value_counts().reset_index()
+                    df_pie.columns = ['Kategori', 'Jumlah']
+                    
+                    fig2 = px.pie(df_pie, values='Jumlah', names='Kategori', title=f"Komposisi data pada {kolom_pie}")
                     st.plotly_chart(fig2, use_container_width=True)
                 else:
                     st.warning("Tidak ditemukan kolom kategori (teks) untuk membuat Diagram Lingkaran.")
